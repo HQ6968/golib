@@ -22,7 +22,7 @@ type DingTalkResponse struct {
 	Errmsg  string `json:"errmsg"`
 }
 
-func Alarm(content string) error {
+func Alarm(content string,at []string) error {
 	dingtalk := &DingTalkRequest{
 		Msgtype: "text",
 		Text: map[string]string{
@@ -30,7 +30,7 @@ func Alarm(content string) error {
 		},
 		At: map[string]interface{}{
 			"isAtAll":   true,
-			"atMobiles": []string{"18521503623"},
+			"atMobiles": at,
 		},
 	}
 
