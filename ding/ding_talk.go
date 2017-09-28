@@ -18,20 +18,22 @@ type DingTalkRequest struct {
 }
 
 type DingTalkResponse struct {
-	Errcode int `json:"errcode"`
+	Errcode int    `json:"errcode"`
 	Errmsg  string `json:"errmsg"`
 }
 
-func Alarm(content string,at []string) error {
+func Alarm(content string, at ...[]string) error {
 	dingtalk := &DingTalkRequest{
 		Msgtype: "text",
 		Text: map[string]string{
 			"content": content,
 		},
-		At: map[string]interface{}{
-			"isAtAll":   true,
+	}
+
+	if len(at) > 0 {
+		dingtalk.At = map[string]interface{}{
 			"atMobiles": at,
-		},
+		}
 	}
 
 	buf, err := json.Marshal(dingtalk)
