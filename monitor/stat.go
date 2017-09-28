@@ -3,15 +3,15 @@ package monitor
 import (
 	"time"
 	"sync"
-	"core"
 	"github.com/verystar/golib/logger"
+	"github.com/verystar/golib/redis"
 	"sync/atomic"
 	"encoding/json"
 )
 
 type RedisMonitor struct {
-	data chan map[string]interface{}
-	dbPrefix   string
+	data     chan map[string]interface{}
+	dbPrefix string
 }
 
 var redisMonitor *RedisMonitor
@@ -31,7 +31,7 @@ func (this *RedisMonitor) Run() {
 	var err error
 	var marshaledBytes []byte
 
-	client, ok := core.Redis("stat")
+	client, ok := redis.Client("stat")
 	if !ok {
 		logger.Fatal("Redis not found")
 		return
