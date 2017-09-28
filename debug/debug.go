@@ -11,12 +11,21 @@ import (
 )
 
 var (
-	Debug     = false
+	debugFlag = "off"
+	savePath  = "./debug/"
 	debugLock sync.Mutex
 )
 
+func Open() {
+	debugFlag = "on"
+}
+
+func SavePath(p string) {
+	savePath = p
+}
+
 func Debugf(format string, args ...interface{}) {
-	if Debug {
+	if debugFlag == "on" {
 		pc, file, line, ok := runtime.Caller(1)
 		if !ok {
 			file = "<?>"

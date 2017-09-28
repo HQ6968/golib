@@ -2,31 +2,30 @@ package debug
 
 import (
 	"time"
-	"core/util"
 	"encoding/json"
 	"bytes"
 	"fmt"
 	"github.com/verystar/golib/color"
 	"strings"
+	"strconv"
+	"path/filepath"
+	"os"
 )
 
 type DebugTagData struct {
 	Key     string
 	Data    interface{}
-	Stack   string
+	Stack   callStack
 	Current string
 }
+
 type DebugTag struct {
-	t         time.Time
-	Data      []DebugTagData
-	DebugFlag string
-	SavePath  string
+	t    time.Time
+	data []DebugTagData
 }
 
 func NewDebugTag(options ...func(*DebugTag)) *DebugTag {
-	debug := &DebugTag{
-		DebugFlag: "on",
-	}
+	debug := &DebugTag{}
 
 	for _, option := range options {
 		option(debug)
@@ -37,56 +36,73 @@ func NewDebugTag(options ...func(*DebugTag)) *DebugTag {
 }
 
 func (this *DebugTag) Start() {
-	if this.DebugFlag == "off" {
+	if debugFlag == "off" {
 		return
 	}
 	this.t = time.Now()
 }
 
 func (this *DebugTag) Tag(key string, data ...interface{}) {
-	if this.DebugFlag == "off" {
+	if debugFlag == "off" {
 		return
 	}
 
-	st := Stack(2)
+	st := Callstack(2)
 
 	fmt.Println(color.Blue("[Debug Tag]") + " -------------------------> " + key + " <-------------------------")
-	fmt.Println(color.Green(string(st)))
+	fmt.Println(color.Green("File:" + st.File + ", Func:" + st.Func + ", Line:" + strconv.Itoa(st.LineNo)))
 	fmt.Println(data...)
 
-	this.Data = append(this.Data, DebugTagData{
+	this.data = append(this.data, DebugTagData{
 		Key:     key,
 		Data:    data,
-		Stack:   string(st),
+		Stack:   st,
 		Current: time.Now().Sub(this.t).String(),
 	})
 }
 
 func (this *DebugTag) GetTagData() []DebugTagData {
-	return this.Data
+	return this.data
 }
 
 func (this *DebugTag) Save(dir string, format string, prefix ...string) error {
 	pre := ""
 	if len(prefix) > 0 {
-		pre = prefix[0]
+		pre = prefix[0] + "_"
 	}
-	if this.DebugFlag == "off" {
+	if debugFlag == "off" {
 		return nil
 	}
 
 	now := time.Now()
 	s := now.Format(format)
-	filename := strings.TrimRight(this.SavePath, "/") + "/" + dir + "/" + pre + "_" + s + ".log"
-	//buf , err := json.Marshal(this.Data)
-	buf, err := json.MarshalIndent(this.Data, "", "    ")
+	filename := strings.TrimRight(savePath, "/") + "/" + dir + "/" + pre + s + ".log"
+	//buf , err := json.Marshal(this.data)
+	buf, err := json.MarshalIndent(this.data, "", "    ")
 	if err != nil {
 		return err
 	}
 	buffer := bytes.NewBufferString(fmt.Sprintf("\n[%v]\n", now.String()))
 	buffer.Write(buf)
 	buffer.WriteString("\n\n")
-	return util.WriteToFile(filename, buffer.Bytes())
+	return writeToFile(filename, buffer.Bytes())
+}
+
+func writeToFile(filename string, text []byte) error {
+	dir := filepath.Dir(filename)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, 0755)
+	}
+
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err = f.Write(text); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (this *DebugTag) SaveToSecond(dir string, prefix ...string) error {
